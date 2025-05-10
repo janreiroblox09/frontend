@@ -238,53 +238,54 @@
         });
     }
 
-    function startMotorAndServoRuntime() {
-      const progress = document.getElementById("progressBar");
-      const timeDisplay = document.getElementById("timeDisplay");
-      const finalMessage = document.getElementById("finalMessage");
+   function startMotorAndServoRuntime() {
+  const progress = document.getElementById("progressBar");
+  const timeDisplay = document.getElementById("timeDisplay");
+  const finalMessage = document.getElementById("finalMessage");
 
-      progress.style.display = 'block';
-      timeDisplay.style.display = 'block';
-      finalMessage.style.display = 'none';
+  progress.style.display = 'block';
+  timeDisplay.style.display = 'block';
+  finalMessage.style.display = 'none';
 
-      progress.value = 0;
-      elapsedSeconds = 0;
+  progress.value = 0;
+  elapsedSeconds = 0;
 
-      progressInterval = setInterval(() => {
-        elapsedSeconds++;
-        progress.value = (elapsedSeconds / 180) * 100;
-        updateTimeDisplay();
+  progressInterval = setInterval(() => {
+    elapsedSeconds++;
+    progress.value = (elapsedSeconds / 180) * 100;
+    updateTimeDisplay();
 
-        if (elapsedSeconds > 10 && elapsedSeconds <= 180 && (elapsedSeconds - 10) % 15 === 0) {
-          const isOpenCycle = Math.floor((elapsedSeconds - 10) / 15) % 2 === 0;
-          const action = isOpenCycle ? "open" : "close";
-          fetch(`${esp32IP}/servo/${action}`).then(() => console.log(`Servo ${action}`));
-        }
-
-
-        if (elapsedSeconds >= 180 && !redirectInitiated) {
-          redirectInitiated = true;
-          clearInterval(progressInterval);
-
-          fetch(`${esp32IP}/servo/close`)
-            .then(() => {
-              finalMessage.innerText = "Servo Cycle Complete. Servo Closed.";
-            })
-            .catch(err => {
-              console.error("Final servo close failed:", err);
-              finalMessage.innerText = "⚠️ Failed to close servo.";
-            })
-            .finally(() => {
-              progress.style.display = 'none';
-              timeDisplay.style.display = 'none';
-              finalMessage.style.display = 'block';
-              setTimeout(() => {
-                window.location.href = "air-drying.html";
-              }, 2000);
-            });
-        }
-      }, 1000);
+    // Open servo ONCE at 10 seconds
+    if (elapsedSeconds === 30) {
+      fetch(`${esp32IP}/servo/open`)
+        .then(() => console.log("Servo opened at 10s"))
+        .catch(err => console.error("Failed to open servo:", err));
     }
+
+    // Close servo and finish at 180 seconds
+    if (elapsedSeconds >= 180 && !redirectInitiated) {
+      redirectInitiated = true;
+      clearInterval(progressInterval);
+
+      fetch(`${esp32IP}/servo/close`)
+        .then(() => {
+          finalMessage.innerText = "Servo Cycle Complete. Servo Closed.";
+        })
+        .catch(err => {
+          console.error("Final servo close failed:", err);
+          finalMessage.innerText = "⚠️ Failed to close servo.";
+        })
+        .finally(() => {
+          progress.style.display = 'none';
+          timeDisplay.style.display = 'none';
+          finalMessage.style.display = 'block';
+          setTimeout(() => {
+            window.location.href = "air-drying.html";
+          }, 2000);
+        });
+    }
+  }, 1000);
+}
 
     function stopProgressBar() {
       clearInterval(progressInterval);
